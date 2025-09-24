@@ -1,0 +1,10 @@
+/Users/cy/IdeaProjects/roleplay-ai/cosplay/src/main/java/ai/cosplay/service/ChatService.java
+/Users/cy/IdeaProjects/roleplay-ai/cosplay/src/main/java/ai/cosplay/domain/Role.java
+/Users/cy/IdeaProjects/roleplay-ai/cosplay/src/main/java/ai/cosplay/service/RoleService.java
+/Users/cy/IdeaProjects/roleplay-ai/cosplay/src/main/java/ai/cosplay/web/GlobalExceptionHandler.java
+/Users/cy/IdeaProjects/roleplay-ai/cosplay/src/main/java/ai/cosplay/CosplayApplication.java
+/Users/cy/IdeaProjects/roleplay-ai/cosplay/src/main/java/ai/cosplay/domain/ChatHistory.java
+/Users/cy/IdeaProjects/roleplay-ai/cosplay/src/main/java/ai/cosplay/repository/RoleRepository.java
+/Users/cy/IdeaProjects/roleplay-ai/cosplay/src/main/java/ai/cosplay/repository/ChatHistoryRepository.java
+/Users/cy/IdeaProjects/roleplay-ai/cosplay/src/main/java/ai/cosplay/web/RoleController.java
+/Users/cy/IdeaProjects/roleplay-ai/cosplay/src/main/java/ai/cosplay/web/ChatController.java

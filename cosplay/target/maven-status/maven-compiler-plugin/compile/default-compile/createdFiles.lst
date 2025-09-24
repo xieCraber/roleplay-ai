@@ -1,0 +1,14 @@
+ai/cosplay/web/RoleController.class
+ai/cosplay/domain/Role.class
+ai/cosplay/web/GlobalExceptionHandler.class
+ai/cosplay/domain/ChatHistory$ChatHistoryBuilder.class
+ai/cosplay/web/ChatController.class
+ai/cosplay/service/ChatService$ChatResponse.class
+ai/cosplay/domain/ChatHistory.class
+ai/cosplay/CosplayApplication.class
+ai/cosplay/repository/ChatHistoryRepository.class
+ai/cosplay/repository/RoleRepository.class
+ai/cosplay/service/ChatService.class
+ai/cosplay/service/RoleService.class
+ai/cosplay/web/ChatController$ChatRequest.class
+ai/cosplay/domain/Role$RoleBuilder.class

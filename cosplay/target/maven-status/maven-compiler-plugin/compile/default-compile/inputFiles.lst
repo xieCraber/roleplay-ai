@@ -1,0 +1,11 @@
+E:\yxcode\roleplay-ai\cosplay\src\main\java\ai\cosplay\controller\ChatController.java
+E:\yxcode\roleplay-ai\cosplay\src\main\java\ai\cosplay\domain\Role.java
+E:\yxcode\roleplay-ai\cosplay\src\main\java\ai\cosplay\domain\ChatHistory.java
+E:\yxcode\roleplay-ai\cosplay\src\main\java\ai\cosplay\repository\ChatHistoryRepository.java
+E:\yxcode\roleplay-ai\cosplay\src\main\java\ai\cosplay\controller\GlobalExceptionHandler.java
+E:\yxcode\roleplay-ai\cosplay\src\main\java\ai\cosplay\CosplayApplication.java
+E:\yxcode\roleplay-ai\cosplay\src\main\java\ai\cosplay\controller\RoleController.java
+E:\yxcode\roleplay-ai\cosplay\src\main\java\ai\cosplay\service\ChatService.java
+E:\yxcode\roleplay-ai\cosplay\src\main\java\ai\cosplay\service\RoleService.java
+E:\yxcode\roleplay-ai\cosplay\src\main\java\ai\cosplay\repository\RoleRepository.java
+E:\yxcode\roleplay-ai\cosplay\src\main\java\ai\cosplay\config\JacksonConfig.java

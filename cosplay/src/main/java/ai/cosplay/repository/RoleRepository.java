@@ -1,6 +1,7 @@
 package ai.cosplay.repository;
 
 import ai.cosplay.domain.Role;
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -10,6 +11,8 @@ public interface RoleRepository extends JpaRepository<Role, Long> {
     Optional<Role> findByNameIgnoreCase(String name);
     List<Role> findAll();
     Optional<Role> findById(Long id);
+    boolean existsByName(String name);
+
 }
 
 

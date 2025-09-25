@@ -1,7 +1,11 @@
 package ai.cosplay.controller;
 
+import ai.cosplay.domain.CreateRoleRequest;
 import ai.cosplay.domain.Role;
 import ai.cosplay.service.RoleService;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -25,6 +29,14 @@ public class RoleController {
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
+
+    @PostMapping("/addrole")
+    public ResponseEntity<Role> createRole(@RequestBody CreateRoleRequest request) {
+        Role role = roleService.createRole(request);
+        return ResponseEntity.ok(role);
+    }
+
+
 }
 
 

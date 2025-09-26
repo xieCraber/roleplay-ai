@@ -19,3 +19,12 @@ export const fetchRoleById = (id) => {
       throw error
     })
 }
+
+export const createRole = (roleData) => {
+  return axios.post(`${API_BASE_URL}/addrole`, roleData)
+    .then(response => response.data)
+    .catch(error => {
+      console.error('创建角色失败:', error)
+      throw error
+    })
+}

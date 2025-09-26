@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -21,6 +22,8 @@ public class RoleService {
     private static final Logger log = LoggerFactory.getLogger(RoleService.class);
     private final RoleRepository roleRepository;
     private final ChatClient chatClient;
+    @Autowired
+    private FileStorageService fileStorageService;
 
     public List<Role> listAll() {
         return roleRepository.findAll();
@@ -35,12 +38,36 @@ public class RoleService {
             throw new IllegalArgumentException("角色名称已存在: " + request.getName());
         }
 
+        // 验证头像文件
+        if (request.getAvatar() != null && !request.getAvatar().isEmpty()) {
+            fileStorageService.validateImageFile(request.getAvatar());
+        }
+
         // 使用AI生成专业的角色信息
         RoleAIContent aiContent = generateRoleContentWithAI(request.getName(), request.getDescription());
+        String avatarUrl = null;
+
+        // 处理头像上传
+        if (request.getAvatar() != null && !request.getAvatar().isEmpty()) {
+            try {
+                // 生成基于时间戳和角色名的文件名
+                String filename = "role_" + System.currentTimeMillis() + "_" +
+                        request.getName().replaceAll("[^a-zA-Z0-9]", "_");
+                avatarUrl = fileStorageService.saveAvatar(request.getAvatar(), filename);
+            } catch (Exception e) {
+                log.error("头像上传失败，使用默认头像: {}", e.getMessage());
+                avatarUrl = fileStorageService.getDefaultAvatar();
+            }
+        }
+
+        if(request.getAvatar()==null){
+            avatarUrl = fileStorageService.getDefaultAvatar();
+        }
 
         Role role = Role.builder()
                 .name(request.getName())
                 .archetype(aiContent.getArchetype())
+                .avatarUrl(avatarUrl)
                 .description(aiContent.getDescription())
                 .systemPrompt(aiContent.getSystemPrompt())
                 .createdAt(Instant.now())

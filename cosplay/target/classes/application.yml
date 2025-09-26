@@ -5,7 +5,7 @@ spring:
   application:
     name: cosplay
   datasource:
-    url: jdbc:mysql://localhost:3306/cosplay_db?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+    url: jdbc:mysql://localhost:3306/cosplay_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: root
     password: sunkkk0908
@@ -21,6 +21,10 @@ spring:
         jdbc:
           lob:
             non_contextual_creation: true
+#  web:
+#    resources:
+#      static-locations: classpath:/static/, file:./uploads/
+
 
   ai:
     openai:
@@ -31,6 +35,16 @@ spring:
           model: qwen3-max
           temperature: 0.7
           max-tokens: 1024
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+app:
+  upload:
+    dir: ./uploads
+  base:
+    url: http://localhost:8088
+
 
 logging:
   level:

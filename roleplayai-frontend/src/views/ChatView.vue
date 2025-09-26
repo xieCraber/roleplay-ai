@@ -80,6 +80,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useChatStore } from '@/stores/chatStore'
 import { useRoleStore } from '@/stores/roleStore'
 import MessageBubble from '@/components/MessageBubble.vue'
+import { stopAllSpeech } from '@/utils/speech'
 
 export default {
   name: 'ChatView',
@@ -108,15 +109,17 @@ export default {
     
     // 方法
     const goBack = () => {
+      // 退出前停止所有语音
+      stopAllSpeech()
       chatStore.clearChat()
       router.push('/')
     }
     
     const getAvatarUrl = computed(() => {
-      if (!currentRole.value) return 'https://api.dicebear.com/7.x/avataaars/svg?seed=default&radius=20&backgroundColor=b6e3f4'
+      if (!currentRole.value) return 'https://api.dicebear.com/7.x/initials/svg?seed=default&backgroundColor=007acc,9ec1cf,e9f5f5&radius=20&fontColor=ffffff&baseColor=000000&accentColor=ffd700'
       
       const seed = encodeURIComponent(currentRole.value.name);
-      return `https://api.dicebear.com/7/x/avataaars/svg?seed=${seed}&radius=20&backgroundColor=b6e3f4,c0aede,d1d4f9`
+      return `https://api.dicebear.com/7.x/initials/svg?seed=${seed}&backgroundColor=007acc,9ec1cf,e9f5f5&radius=20&fontColor=ffffff&baseColor=000000&accentColor=ffd700`
     })
     
     const sendMessage = () => {
@@ -182,7 +185,9 @@ export default {
       })
     })
     
+    // 组件卸载时停止所有语音
     onUnmounted(() => {
+      stopAllSpeech()
       chatStore.clearChat()
     })
     
@@ -238,6 +243,7 @@ export default {
   overflow: hidden;
   margin-right: 10px;
   border: 2px solid #409eff;
+  background: linear-gradient(135deg, #409eff, #67c23a);
 }
 
 .avatar img {

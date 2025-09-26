@@ -1,8 +1,24 @@
 <template>
   <div :class="['message-bubble', message.sender]">
-    <div v-if="message.sender === 'ai'" class="voice-btn" @click="playAudio">
-      <el-icon v-if="isPlaying"><Loading /></el-icon>
-      <el-icon v-else><VideoPlay /></el-icon>
+    <div v-if="message.sender === 'ai'" class="voice-controls">
+      <el-button 
+        circle 
+        size="small"
+        class="voice-btn"
+        @click="toggleAudio"
+        :icon="isPlaying ? VideoPause : isPaused ? CaretRight : VideoPlay"
+      />
+      <!-- 临时移除静音按钮 -->
+      <!-- 
+      <el-button 
+        v-if="isPlaying || isPaused"
+        circle 
+        size="small"
+        class="mute-btn"
+        @click="toggleMute"
+        :icon="isMuted ? VolumeMute : VolumeUp"
+      />
+      -->
     </div>
     
     <!-- 技能触发效果 -->
@@ -18,10 +34,30 @@
 </template>
 
 <script>
-import { ref } from 'vue'
-import { speakText } from '@/utils/speech'
+import { ref, onMounted, onUnmounted } from 'vue'
+// 修正：只导入存在的图标
+import { 
+  VideoPlay, 
+  VideoPause, 
+  CaretRight, 
+//   VolumeUp
+  // 移除 VolumeMute 导入
+} from '@element-plus/icons-vue'
+import { 
+  speakText, 
+  isSpeechMuted,
+  muteSpeech,
+  unmuteSpeech
+} from '@/utils/speech'
 
 export default {
+  components: {
+    VideoPlay,
+    VideoPause,
+    CaretRight,
+    // VolumeUp
+    // 移除 VolumeMute 组件注册
+  },
   props: {
     message: {
       type: Object,
@@ -30,20 +66,8 @@ export default {
   },
   setup(props) {
     const isPlaying = ref(false)
-    
-    const playAudio = () => {
-      if (isPlaying.value) return
-      
-      isPlaying.value = true
-      speakText(
-        props.message.content,
-        () => { isPlaying.value = false },
-        (error) => {
-          console.error('播放语音失败:', error)
-          isPlaying.value = false
-        }
-      )
-    }
+    const isPaused = ref(false)
+    const isMuted = ref(false)
     
     // 检查是否为流式消息
     const isStreaming = props.message.id && props.message.sender === 'ai'
@@ -70,19 +94,97 @@ export default {
       props.message.content.includes('文学')
     )
     
+    const playAudio = () => {
+      if (isPlaying.value || isPaused.value) return
+      
+      isPlaying.value = true
+      isPaused.value = false
+      isMuted.value = false
+      
+      speakText(
+        props.message.content,
+        () => {
+          isPlaying.value = false
+          isPaused.value = false
+        },
+        (error) => {
+          console.error('播放语音失败:', error)
+          isPlaying.value = false
+          isPaused.value = false
+        }
+      )
+    }
+    
+    const pauseAudio = () => {
+      if (isPaused.value) {
+        window.speechSynthesis.resume()
+        isPaused.value = false
+      } else if (isPlaying.value) {
+        window.speechSynthesis.pause()
+        isPaused.value = true
+      }
+    }
+    
+    const toggleAudio = () => {
+      if (isPaused.value || isPlaying.value) {
+        pauseAudio()
+      } else {
+        playAudio()
+      }
+    }
+    
+    // 临时移除静音功能
+    /*
+    const toggleMute = () => {
+      if (isMuted.value) {
+        unmuteSpeech()
+        isMuted.value = false
+      } else {
+        muteSpeech()
+        isMuted.value = true
+      }
+    }
+    */
+    
+    // 监听语音状态变化
+    const speechStatusCheck = setInterval(() => {
+      if (window.speechSynthesis.speaking) {
+        isPlaying.value = true
+        isPaused.value = window.speechSynthesis.paused
+      } else {
+        isPlaying.value = false
+        isPaused.value = false
+      }
+      
+      isMuted.value = isSpeechMuted()
+    }, 100)
+    
+    // 组件卸载时清理
+    onUnmounted(() => {
+      clearInterval(speechStatusCheck)
+    })
+    
     return {
       isPlaying,
-      playAudio,
+      isPaused,
       isStreaming,
       isSpellSkill,
       isSocraticSkill,
-      isLiterarySkill
+      isLiterarySkill,
+      toggleAudio,
+      // 移除 toggleMute,
+      VideoPlay,
+      VideoPause,
+      CaretRight,
+    //   VolumeUp
+      // 移除 VolumeMute
     }
   }
 }
 </script>
 
 <style scoped>
+/* 样式部分保持不变 */
 .message-bubble {
   max-width: 80%;
   padding: 12px 15px;
@@ -107,22 +209,25 @@ export default {
   border-bottom-left-radius: 5px;
 }
 
-.voice-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+.voice-controls {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  display: flex;
+  gap: 5px;
+}
+
+.voice-btn, .mute-btn {
   width: 24px;
   height: 24px;
-  border-radius: 50%;
-  background-color: #dcdfe6;
-  margin-right: 8px;
-  cursor: pointer;
-  color: #409eff;
+  padding: 0;
+  font-size: 12px;
 }
 
 .content {
   display: inline-block;
   min-height: 1.5em;
+  padding-right: 40px; /* 为控制按钮留出空间 */
 }
 
 .cursor {

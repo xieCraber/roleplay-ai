@@ -1,4 +1,26 @@
 // 语音识别和TTS工具
+let currentUtterance = null;
+let isMuted = false;
+
+export const isSpeechMuted = () => isMuted;
+
+export const muteSpeech = () => {
+  isMuted = true;
+  if (window.speechSynthesis.speaking) {
+    window.speechSynthesis.cancel();
+  }
+};
+
+export const unmuteSpeech = () => {
+  isMuted = false;
+};
+
+export const stopAllSpeech = () => {
+  if (window.speechSynthesis.speaking) {
+    window.speechSynthesis.cancel();
+  }
+  currentUtterance = null;
+};
 
 export const startSpeechRecognition = (onResult, onError) => {
   if (!('webkitSpeechRecognition' in window)) {
@@ -30,26 +52,45 @@ export const startSpeechRecognition = (onResult, onError) => {
   return recognition
 }
 
-export const speakText = (text) => {
+export const speakText = (text, onEnd, onError) => {
+  if (isMuted) return;
+  
   if ('speechSynthesis' in window) {
-    // 取消之前的语音
-    window.speechSynthesis.cancel()
+    // 停止当前语音
+    if (currentUtterance && window.speechSynthesis.speaking) {
+      window.speechSynthesis.cancel();
+    }
     
     const utterance = new SpeechSynthesisUtterance(text)
     utterance.lang = 'zh-CN'
     utterance.rate = 1.0
     utterance.pitch = 1.0
     
+    // 存儲當前語音對象以便控制
+    currentUtterance = utterance;
+    
     window.speechSynthesis.speak(utterance)
     
     utterance.onend = () => {
       console.log('语音播报完成')
+      if (onEnd) onEnd();
+      currentUtterance = null;
     }
     
     utterance.onerror = (event) => {
       console.error('语音播报错误:', event)
+      if (onError) onError(event);
+      currentUtterance = null;
     }
   } else {
     console.warn('浏览器不支持语音合成')
+  }
+}
+
+export const toggleSpeech = () => {
+  if (window.speechSynthesis.speaking) {
+    window.speechSynthesis.pause();
+  } else if (window.speechSynthesis.paused) {
+    window.speechSynthesis.resume();
   }
 }

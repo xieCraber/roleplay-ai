@@ -127,6 +127,23 @@ export default {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 25px;
+  /* 修复：确保网格正确显示 */
+  width: 100%;
+  padding: 0 10px;
+}
+
+/* 添加响应式调整 */
+@media (max-width: 768px) {
+  .roles-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .roles-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .loading-state, .error-state {

@@ -23,7 +23,7 @@ export default {
     }
   },
   emits: ['select'],
-  setup(props, { emit }) {  // 修复：添加 { emit } 到 setup 参数
+  setup(props, { emit }) {
     const getAvatarUrl = computed(() => {
       // 使用DiceBear Initials风格生成专属头像
       const seed = encodeURIComponent(props.role.name);
@@ -31,7 +31,7 @@ export default {
     })
     
     const onClick = () => {
-      emit('select', props.role) 
+      emit('select', props.role)
     }
     
     return {
@@ -51,6 +51,10 @@ export default {
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   cursor: pointer;
   padding: 20px;
+  /* 修复：确保卡片高度一致 */
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .role-card:hover {
@@ -78,6 +82,10 @@ export default {
   font-weight: 600;
   color: #303133;
   margin-bottom: 5px;
+  /* 修复：确保名称高度一致 */
+  min-height: 28px;
+  display: flex;
+  align-items: center;
 }
 
 .role-archetype {
@@ -85,6 +93,9 @@ export default {
   color: #409eff;
   font-weight: 500;
   margin-bottom: 10px;
+  min-height: 22px;
+  display: flex;
+  align-items: center;
 }
 
 .role-description {
@@ -92,6 +103,9 @@ export default {
   color: #606266;
   line-height: 1.5;
   min-height: 60px;
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
 }
 
 .chat-btn {

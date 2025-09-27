@@ -50,6 +50,7 @@
 <script>
 import { ref, onMounted, computed } from 'vue'
 import { useRoleStore } from '@/stores/roleStore'
+import { useChatStore } from '@/stores/chatStore'
 import { getChatHistory } from '@/utils/api/chat'
 
 export default {
@@ -59,9 +60,10 @@ export default {
     const error = ref(null)
     const sessions = ref([])
     const roleStore = useRoleStore()
+    const chatStore = useChatStore()
     
     // 从localStorage获取当前会话ID
-    const currentSessionId = ref(localStorage.getItem('currentSessionId') || null)
+    const currentSessionId = ref(chatStore.sessionId)
     
     const loadSessions = async () => {
       loading.value = true
@@ -78,18 +80,24 @@ export default {
         
         for (const role of roleStore.roles) {
           try {
-            // 获取该角色的最近50条会话记录
-            const history = await getChatHistory(`session-${role.id}-latest`)
+            // 获取该角色保存的sessionId
+            const sessionId = chatStore.getRoleSessionId(role.id)
             
-            if (history && history.length > 0) {
-              const lastMessage = history[history.length - 1]
-              allSessions.push({
-                id: `session-${role.id}-${lastMessage.id}`,
-                roleId: role.id,
-                roleName: role.name,
-                lastMessageTime: new Date(lastMessage.createdAt),
-                preview: lastMessage.assistantReply.substring(0, 50) + (lastMessage.assistantReply.length > 50 ? '...' : '')
-              })
+            if (sessionId) {
+              // 获取该会话的历史记录
+              const history = await getChatHistory(sessionId)
+              
+              if (history && history.length > 0) {
+                const lastMessage = history[history.length - 1]
+                allSessions.push({
+                  id: sessionId,
+                  roleId: role.id,
+                  roleName: role.name,
+                  lastMessageTime: new Date(lastMessage.createdAt),
+                  preview: lastMessage.assistantReply.substring(0, 50) + (lastMessage.assistantReply.length > 50 ? '...' : ''),
+                  messageCount: history.length
+                })
+              }
             }
           } catch (e) {
             console.error(`获取角色 ${role.id} 的会话失败:`, e)
@@ -147,7 +155,6 @@ export default {
     
     const selectSession = (session) => {
       currentSessionId.value = session.id
-      localStorage.setItem('currentSessionId', session.id)
       emit('session-selected', session)
     }
     

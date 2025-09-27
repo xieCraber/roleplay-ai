@@ -32,37 +32,60 @@ export const useChatStore = defineStore('chat', {
   },
   
   actions: {
-    async initChat(roleId) {
+    async initChat(roleId, forceNewSession = false) {
       this.messages = []
       this.isSending = false
       this.currentRoleId = roleId
       
+      // 检查是否有已保存的sessionId
+      const savedSessionKey = `session_${roleId}`
+      let existingSessionId = null
+      
+      if (!forceNewSession) {
+        existingSessionId = localStorage.getItem(savedSessionKey)
+      }
+      
       try {
-        // 立即创建会话（后端会返回sessionId）
-        const response = await chat(roleId, null, "你好")
-        this.sessionId = response.sessionId
-        
         // 加载角色信息
         const roleStore = useRoleStore()
         if (roleStore.roles.length === 0) {
           await roleStore.loadRoles()
         }
         
-        // 加载聊天历史
-        await this.loadHistory()
-        
-        // 如果是新会话，发送欢迎消息
-        if (this.messages.length === 0) {
-          const roleStore = useRoleStore()
-          const role = roleStore.roles.find(r => r.id === roleId)
+        // 如果有现有会话，先加载历史记录
+        if (existingSessionId) {
+          this.sessionId = existingSessionId
+          await this.loadHistory()
           
-          if (role) {
-            const welcomeMessage = `你好！我是${role.name}，${role.description}。有什么我可以帮助你的吗？`
-            this.messages.push({
-              sender: 'ai',
-              content: welcomeMessage,
-              isWelcome: true
-            })
+          // 如果历史记录为空，说明会话可能已过期，创建新会话
+          if (this.messages.length === 0) {
+            existingSessionId = null
+          }
+        }
+        
+        // 如果没有现有会话或强制创建新会话，创建新会话
+        if (!existingSessionId) {
+          const response = await chat(roleId, null, "你好")
+          this.sessionId = response.sessionId
+          
+          // 保存sessionId到localStorage
+          localStorage.setItem(savedSessionKey, this.sessionId)
+          
+          // 加载新会话的历史记录
+          await this.loadHistory()
+          
+          // 如果是新会话，发送欢迎消息
+          if (this.messages.length === 0) {
+            const role = roleStore.roles.find(r => r.id === roleId)
+            
+            if (role) {
+              const welcomeMessage = `你好！我是${role.name}，${role.description}。有什么我可以帮助你的吗？`
+              this.messages.push({
+                sender: 'ai',
+                content: welcomeMessage,
+                isWelcome: true
+              })
+            }
           }
         }
       } catch (error) {
@@ -83,7 +106,9 @@ export const useChatStore = defineStore('chat', {
       
       try {
         const history = await getChatHistory(this.sessionId)
-        this.messages = history.map(item => [
+        // 后端返回的是倒序，需要反转成正序（最早的在前面）
+        const reversedHistory = history.reverse()
+        this.messages = reversedHistory.map(item => [
           { sender: 'user', content: item.userMessage, id: item.id },
           { sender: 'ai', content: item.assistantReply, id: item.id }
         ]).flat()
@@ -140,8 +165,10 @@ export const useChatStore = defineStore('chat', {
           content
         )
         
-        // 更新会话ID
+        // 更新会话ID并保存到localStorage
         this.sessionId = response.sessionId
+        const savedSessionKey = `session_${this.currentRoleId}`
+        localStorage.setItem(savedSessionKey, this.sessionId)
         
         // 停止AI思考状态
         this.stopAiThinking()
@@ -290,6 +317,22 @@ export const useChatStore = defineStore('chat', {
       this.isSending = false
       this.isStreaming = false
       this.stopAiThinking()
+    },
+    
+    // 清除特定角色的会话
+    clearRoleSession(roleId) {
+      const savedSessionKey = `session_${roleId}`
+      localStorage.removeItem(savedSessionKey)
+      
+      if (this.currentRoleId === roleId) {
+        this.clearChat()
+      }
+    },
+    
+    // 获取角色的会话ID
+    getRoleSessionId(roleId) {
+      const savedSessionKey = `session_${roleId}`
+      return localStorage.getItem(savedSessionKey)
     }
   }
 })

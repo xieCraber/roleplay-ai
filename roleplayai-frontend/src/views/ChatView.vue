@@ -165,8 +165,11 @@ export default {
     const showShareDialog = ref(false)
     const shareLink = ref('')
     
-    // 计算属性
-    const currentRole = computed(() => roleStore.roles.find(r => r.id === roleId))
+    // 计算属性 - 使用chatStore中的currentRoleId而不是路由参数
+    const currentRole = computed(() => {
+      const activeRoleId = chatStore.currentRoleId || roleId
+      return roleStore.roles.find(r => r.id === activeRoleId)
+    })
     const messages = computed(() => chatStore.messages)
     const isSending = computed(() => chatStore.isSending)
     const isStreaming = computed(() => chatStore.isStreaming)
@@ -248,9 +251,9 @@ export default {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'info'
-      }).then(() => {
+      }).then(async () => {
         chatStore.clearChat();
-        chatStore.initChat(roleId);
+        await chatStore.initChat(roleId, true); // 强制创建新会话
       }).catch(() => {})
     }
     
@@ -259,9 +262,9 @@ export default {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
-      }).then(() => {
-        chatStore.clearChat();
-        chatStore.initChat(roleId);
+      }).then(async () => {
+        chatStore.clearRoleSession(roleId);
+        await chatStore.initChat(roleId, true); // 强制创建新会话
       }).catch(() => {})
     }
     
@@ -312,13 +315,14 @@ export default {
         });
     }
     
-    const loadSession = (session) => {
+    const loadSession = async (session) => {
       // 切换到指定会话
       chatStore.sessionId = session.id;
       chatStore.messages = [];
+      chatStore.currentRoleId = session.roleId;
       
       // 加载会话历史
-      chatStore.loadHistory();
+      await chatStore.loadHistory();
     }
     
     // 监听消息变化

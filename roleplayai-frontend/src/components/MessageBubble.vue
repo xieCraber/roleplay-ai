@@ -18,6 +18,11 @@
     <div class="content">
       {{ message.content }}
       <span v-if="isStreaming" class="cursor">▍</span>
+      <span v-if="isThinking" class="thinking-dots">
+        <span class="dot"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+      </span>
     </div>
   </div>
 </template>
@@ -54,9 +59,18 @@ export default {
     const isMuted = ref(false)
     
     // 检查是否为流式消息
-    const isStreaming = computed(() => props.message.id && props.message.sender === 'ai')
+    const isStreaming = computed(() => {
+      return props.message.id && 
+             props.message.sender === 'ai' && 
+             !props.message.isThinking;
+    })
     
-    // 检测技能触发（使用正则表达式提高准确性）
+    // 检查是否为思考中消息
+    const isThinking = computed(() => {
+      return props.message.isThinking;
+    })
+    
+    // 检测技能触发
     const isSpellSkill = computed(() => {
       if (!props.message.content) return false;
       return /魔杖|咒语|魔法|霍格沃茨|施法|法术|巫师|魔法师|魔法阵|魔力|魔杖|魔杖挥舞|施法手势|魔法咒语/i.test(props.message.content);
@@ -133,6 +147,7 @@ export default {
       isPlaying,
       isPaused,
       isStreaming,
+      isThinking,
       isSpellSkill,
       isSocraticSkill,
       isLiterarySkill,
@@ -195,6 +210,28 @@ export default {
   animation: blink 1s infinite;
 }
 
+.thinking-dots {
+  margin-left: 5px;
+  display: inline-flex;
+  gap: 2px;
+}
+
+.dot {
+  width: 4px;
+  height: 4px;
+  background-color: #909399;
+  border-radius: 50%;
+  animation: pulse 1.5s infinite;
+}
+
+.dot:nth-child(2) {
+  animation-delay: 0.3s;
+}
+
+.dot:nth-child(3) {
+  animation-delay: 0.6s;
+}
+
 /* 技能特效样式 */
 .spell-effect {
   position: absolute;
@@ -232,5 +269,11 @@ export default {
 @keyframes blink {
   0%, 100% { opacity: 1; }
   50% { opacity: 0; }
+}
+
+@keyframes pulse {
+  0% { transform: scale(0.8); opacity: 0.5; }
+  50% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(0.8); opacity: 0.5; }
 }
 </style>

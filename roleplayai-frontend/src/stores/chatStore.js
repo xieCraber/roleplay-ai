@@ -13,7 +13,16 @@ export const useChatStore = defineStore('chat', {
     isListening: false,
     streamingContent: '',
     streamingMessageId: null,
-    currentRoleId: null
+    currentRoleId: null,
+    // 新增：更精细的流式控制
+    streamSpeed: 40, // 基础打字速度(ms/字符)
+    minStreamSpeed: 20, // 最小速度
+    maxStreamSpeed: 80, // 最大速度
+    punctuationDelayMultiplier: 2.5, // 标点延迟倍数
+    wordDelayMultiplier: 1.2, // 词语延迟倍数
+    // 新增：AI思考状态
+    aiThinking: false,
+    aiThinkingTimer: null
   }),
   
   getters: {
@@ -108,6 +117,9 @@ export const useChatStore = defineStore('chat', {
           content: content
         })
         
+        // 设置AI思考状态
+        this.startAiThinking()
+        
         // 设置发送状态
         this.isSending = true
         this.isStreaming = true
@@ -131,12 +143,16 @@ export const useChatStore = defineStore('chat', {
         // 更新会话ID
         this.sessionId = response.sessionId
         
-        // 处理流式响应
-        this.processStreamingResponse(response.reply)
+        // 停止AI思考状态
+        this.stopAiThinking()
+        
+        // 使用更真实的流式效果
+        this.realisticStreaming(response.reply)
       } catch (error) {
         console.error('发送消息失败:', error)
         this.isSending = false
         this.isStreaming = false
+        this.stopAiThinking()
         
         // 添加错误消息
         this.messages.push({
@@ -147,19 +163,72 @@ export const useChatStore = defineStore('chat', {
       }
     },
     
-    // 处理流式响应
-    processStreamingResponse(fullResponse) {
-      const chunkSize = 15 // 每次显示的字符数
-      const delay = 30 // 毫秒
+    // 新增：AI思考状态
+    startAiThinking() {
+      this.aiThinking = true
+      
+      // 清除可能存在的旧计时器
+      if (this.aiThinkingTimer) {
+        clearTimeout(this.aiThinkingTimer)
+      }
+      
+      // 随机思考时间 (500-1500ms)
+      const thinkingTime = 500 + Math.random() * 1000
+      
+      this.aiThinkingTimer = setTimeout(() => {
+        // 仅当仍在发送状态时才继续
+        if (this.isSending) {
+          // 检查是否已有思考状态显示
+          const hasThinkingMessage = this.messages.some(m => 
+            m.sender === 'ai' && m.isThinking
+          )
+          
+          if (!hasThinkingMessage) {
+            this.messages.push({
+              sender: 'ai',
+              content: '思考中...',
+              isThinking: true,
+              id: 'thinking-' + Date.now()
+            })
+          }
+        }
+      }, thinkingTime)
+    },
+    
+    stopAiThinking() {
+      if (this.aiThinkingTimer) {
+        clearTimeout(this.aiThinkingTimer)
+        this.aiThinkingTimer = null
+      }
+      
+      this.aiThinking = false
+      
+      // 移除思考中消息
+      this.messages = this.messages.filter(m => !m.isThinking)
+    },
+    
+    // 更真实的流式效果
+    realisticStreaming(fullResponse) {
+      // 移除思考中消息（如果有）
+      this.messages = this.messages.filter(m => !m.isThinking)
       
       let index = 0
-      const interval = setInterval(() => {
+      const totalLength = fullResponse.length
+      
+      // 计算自适应速度（内容越长，打字越快）
+      const adaptiveSpeed = Math.max(
+        this.minStreamSpeed,
+        Math.min(
+          this.maxStreamSpeed,
+          this.streamSpeed * (1 - Math.min(1, totalLength / 500))
+        )
+      )
+      
+      const typeNextCharacter = () => {
         if (index < fullResponse.length) {
-          const chunk = fullResponse.substring(index, index + chunkSize)
-          index += chunkSize
-          
-          // 更新流式内容
-          this.streamingContent += chunk
+          const char = fullResponse[index]
+          this.streamingContent += char
+          index++
           
           // 更新AI消息内容
           const aiMessageIndex = this.messages.findIndex(m => 
@@ -169,8 +238,23 @@ export const useChatStore = defineStore('chat', {
           if (aiMessageIndex !== -1) {
             this.messages[aiMessageIndex].content = this.streamingContent
           }
+          
+          // 计算下一个字符的延迟
+          let nextDelay = adaptiveSpeed
+          
+          // 根据字符类型调整延迟
+          if (['，', ',', '。', '.', '!', '？', '?', '；', ';', ':', '：', '、', ' '].includes(char)) {
+            nextDelay *= this.punctuationDelayMultiplier
+          } else if (['的', '了', '和', '是', '在', '有', '人', '这', '上', '中', '大', '国'].includes(char)) {
+            // 常见汉字稍微慢一点
+            nextDelay *= this.wordDelayMultiplier
+          }
+          
+          // 随机波动 (±20%)
+          nextDelay *= 0.8 + Math.random() * 0.4
+          
+          setTimeout(typeNextCharacter, nextDelay)
         } else {
-          clearInterval(interval)
           this.isSending = false
           this.isStreaming = false
           
@@ -179,7 +263,10 @@ export const useChatStore = defineStore('chat', {
             speakText(this.streamingContent)
           }
         }
-      }, delay)
+      }
+      
+      // 开始打字
+      setTimeout(typeNextCharacter, adaptiveSpeed)
     },
     
     startVoiceInput() {
@@ -202,6 +289,7 @@ export const useChatStore = defineStore('chat', {
       this.messages = []
       this.isSending = false
       this.isStreaming = false
+      this.stopAiThinking()
     }
   }
 })

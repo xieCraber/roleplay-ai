@@ -25,9 +25,20 @@ export default {
   emits: ['select'],
   setup(props, { emit }) {
     const getAvatarUrl = computed(() => {
-      // 使用DiceBear Initials风格生成专属头像
+      // 优先使用后端返回的avatarUrl
+      if (props.role.avatarUrl) {
+        return props.role.avatarUrl;
+      }
+      
+      // 如果是默认头像URL，使用DiceBear替代
+      if (props.role.avatarUrl?.includes('/default/')) {
+        const seed = encodeURIComponent(props.role.name);
+        return `https://api.dicebear.com/7.x/initials/svg?seed=${seed}&backgroundColor=007acc,9ec1cf,e9f5f5&radius=20&fontColor=ffffff&baseColor=000000&accentColor=ffd700`;
+      }
+      
+      // 默认情况
       const seed = encodeURIComponent(props.role.name);
-      return `https://api.dicebear.com/7.x/initials/svg?seed=${seed}&backgroundColor=007acc,9ec1cf,e9f5f5&radius=20&fontColor=ffffff&baseColor=000000&accentColor=ffd700`
+      return `https://api.dicebear.com/7.x/initials/svg?seed=${seed}&backgroundColor=007acc,9ec1cf,e9f5f5&radius=20&fontColor=ffffff&baseColor=000000&accentColor=ffd700`;
     })
     
     const onClick = () => {
@@ -67,8 +78,8 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #409eff, #67c23a);
   margin-bottom: 15px;
+  background: linear-gradient(135deg, #409eff, #67c23a);
 }
 
 .avatar img {

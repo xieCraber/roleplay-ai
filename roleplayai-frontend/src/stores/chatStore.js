@@ -12,26 +12,26 @@ export const useChatStore = defineStore('chat', {
     isStreaming: false,
     isListening: false,
     streamingContent: '',
-    streamingMessageId: null
+    streamingMessageId: null,
+    currentRoleId: null
   }),
   
   getters: {
-    currentRoleId() {
-      const path = window.location.pathname
-      const match = path.match(/\/chat\/(\d+)/)
-      return match ? parseInt(match[1]) : null
+    getCurrentRoleId() {
+      return this.currentRoleId;
     }
   },
   
   actions: {
     async initChat(roleId) {
       this.messages = []
-      this.sessionId = null
       this.isSending = false
+      this.currentRoleId = roleId
       
       try {
-        // 创建新会话
-        this.sessionId = null
+        // 立即创建会话（后端会返回sessionId）
+        const response = await chat(roleId, null, "你好")
+        this.sessionId = response.sessionId
         
         // 加载角色信息
         const roleStore = useRoleStore()
@@ -39,14 +39,33 @@ export const useChatStore = defineStore('chat', {
           await roleStore.loadRoles()
         }
         
-        // 加载聊天历史（如果存在）
-        if (this.sessionId) {
-          await this.loadHistory()
+        // 加载聊天历史
+        await this.loadHistory()
+        
+        // 如果是新会话，发送欢迎消息
+        if (this.messages.length === 0) {
+          const roleStore = useRoleStore()
+          const role = roleStore.roles.find(r => r.id === roleId)
+          
+          if (role) {
+            const welcomeMessage = `你好！我是${role.name}，${role.description}。有什么我可以帮助你的吗？`
+            this.messages.push({
+              sender: 'ai',
+              content: welcomeMessage,
+              isWelcome: true
+            })
+          }
         }
       } catch (error) {
         console.error('初始化聊天失败:', error)
         this.isSending = false
-        throw error
+        
+        // 添加友好提示
+        this.messages.push({
+          sender: 'ai',
+          content: '无法连接AI服务，请检查网络或稍后重试',
+          isError: true
+        })
       }
     },
     
@@ -61,6 +80,13 @@ export const useChatStore = defineStore('chat', {
         ]).flat()
       } catch (error) {
         console.error('加载聊天历史失败:', error)
+        
+        // 添加友好提示
+        this.messages.push({
+          sender: 'ai',
+          content: '加载历史消息失败，但可以继续新对话',
+          isError: true
+        })
       }
     },
     
@@ -81,11 +107,6 @@ export const useChatStore = defineStore('chat', {
           sender: 'user',
           content: content
         })
-        
-        // 重置会话ID（如果是第一次发送）
-        if (!this.sessionId) {
-          this.sessionId = null
-        }
         
         // 设置发送状态
         this.isSending = true
@@ -110,8 +131,8 @@ export const useChatStore = defineStore('chat', {
         // 更新会话ID
         this.sessionId = response.sessionId
         
-        // 模拟流式效果
-        this.simulateStreaming(response.reply)
+        // 处理流式响应
+        this.processStreamingResponse(response.reply)
       } catch (error) {
         console.error('发送消息失败:', error)
         this.isSending = false
@@ -126,8 +147,8 @@ export const useChatStore = defineStore('chat', {
       }
     },
     
-    // 模拟流式效果
-    simulateStreaming(fullResponse) {
+    // 处理流式响应
+    processStreamingResponse(fullResponse) {
       const chunkSize = 15 // 每次显示的字符数
       const delay = 30 // 毫秒
       
@@ -154,7 +175,7 @@ export const useChatStore = defineStore('chat', {
           this.isStreaming = false
           
           // 播放AI回复
-          if (this.streamingContent) {
+          if (this.streamingContent && !this.isMuted) {
             speakText(this.streamingContent)
           }
         }
@@ -170,8 +191,9 @@ export const useChatStore = defineStore('chat', {
         if (transcript.trim()) {
           this.sendMessage(transcript)
         }
-      }, () => {
+      }, (error) => {
         this.isListening = false
+        console.error('语音识别错误:', error)
       })
     },
     

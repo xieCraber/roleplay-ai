@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,8 +31,8 @@ public class RoleController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PostMapping("/addrole")
-    public ResponseEntity<Role> createRole(@RequestBody CreateRoleRequest request) {
+    @PostMapping(value = "/addrole", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Role> createRole(@Valid @ModelAttribute CreateRoleRequest request) {
         Role role = roleService.createRole(request);
         return ResponseEntity.ok(role);
     }

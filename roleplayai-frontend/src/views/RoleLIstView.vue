@@ -73,6 +73,30 @@
             placeholder="简要描述角色特点，例如：霍格沃茨四年级学生，勇敢正义" 
           />
         </el-form-item>
+        
+        <!-- 角色头像上传 -->
+        <el-form-item label="角色头像">
+          <el-upload
+            v-if="!previewImage"
+            class="avatar-uploader"
+            :auto-upload="false"
+            :show-file-list="false"
+            :on-change="handleAvatarChange"
+            accept="image/jpeg,image/png,image/gif,image/webp"
+          >
+            <el-button type="primary">选择头像</el-button>
+            <div class="upload-hint">支持JPG/PNG/GIF/WebP格式，最大5MB</div>
+          </el-upload>
+          
+          <div v-else class="avatar-preview">
+            <img :src="previewImage" class="avatar" />
+            <div class="avatar-actions">
+              <el-button type="info" size="small" @click="removeAvatar">重新选择</el-button>
+            </div>
+          </div>
+        </el-form-item>
+        
+        <!-- AI生成状态 -->
         <el-form-item label="AI生成中" v-if="isGenerating">
           <el-progress :percentage="progress" :indeterminate="true" :status="progressStatus" />
           <p class="generation-status">{{ generationStatus }}</p>
@@ -116,6 +140,8 @@ export default {
     const progressStatus = ref('warning')
     const generationStatus = ref('AI正在生成角色信息...')
     const roleForm = ref(null)
+    const previewImage = ref(null)
+    const selectedFile = ref(null)
     
     const newRoleForm = ref({
       name: '',
@@ -186,6 +212,8 @@ export default {
         name: '',
         description: ''
       }
+      previewImage.value = null
+      selectedFile.value = null
       progress.value = 0
       progressStatus.value = 'warning'
       generationStatus.value = 'AI正在生成角色信息...'
@@ -196,6 +224,33 @@ export default {
       }
     }
     
+    // 处理头像选择
+    const handleAvatarChange = (file) => {
+      // 验证文件类型和大小
+      const isValidType = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.raw.type)
+      const isValidSize = file.raw.size / 1024 / 1024 < 5
+      
+      if (!isValidType) {
+        ElMessage.error('仅支持JPG/PNG/GIF/WebP格式的图片')
+        return false
+      }
+      
+      if (!isValidSize) {
+        ElMessage.error('图片大小不能超过5MB')
+        return false
+      }
+      
+      selectedFile.value = file.raw
+      previewImage.value = URL.createObjectURL(file.raw)
+      return false // 阻止自动上传
+    }
+    
+    // 移除头像
+    const removeAvatar = () => {
+      previewImage.value = null
+      selectedFile.value = null
+    }
+    
     // 提交新角色
     const submitNewRole = () => {
       roleForm.value.validate(valid => {
@@ -204,18 +259,12 @@ export default {
           isGenerating.value = true
           progress.value = 10
           
-          // 模拟AI生成过程（实际项目中可以移除，由后端处理）
-          const progressInterval = setInterval(() => {
-            if (progress.value < 90) {
-              progress.value += 5
-            }
-          }, 300)
-          
-          createRole({
-            name: newRoleForm.value.name,
-            description: newRoleForm.value.description
-          }).then(role => {
-            clearInterval(progressInterval)
+          // 调用API
+          createRole(
+            newRoleForm.value.name,
+            newRoleForm.value.description,
+            selectedFile.value
+          ).then(role => {
             progress.value = 100
             progressStatus.value = 'success'
             generationStatus.value = '角色信息生成成功！'
@@ -234,13 +283,12 @@ export default {
               showAddRoleDialog.value = false
             }, 500)
           }).catch(error => {
-            clearInterval(progressInterval)
             progress.value = 100
             progressStatus.value = 'exception'
             
             let errorMessage = '创建角色失败，请稍后重试'
-            if (error.response && error.response.data && error.response.data.message) {
-              errorMessage = error.response.data.message
+            if (error.message) {
+              errorMessage = error.message
             }
             
             // 如果是角色名称已存在错误
@@ -284,7 +332,10 @@ export default {
       newRoleForm,
       rules,
       handleDialogClose,
-      submitNewRole
+      submitNewRole,
+      previewImage,
+      handleAvatarChange,
+      removeAvatar
     }
   }
 }
@@ -391,5 +442,34 @@ export default {
   margin-top: 10px;
   color: #606266;
   font-size: 13px;
+}
+
+.avatar-uploader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.upload-hint {
+  margin-top: 8px;
+  color: #909399;
+  font-size: 12px;
+}
+
+.avatar-preview {
+  position: relative;
+  display: inline-block;
+}
+
+.avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #ebeef5;
+}
+
+.avatar-actions {
+  margin-top: 10px;
 }
 </style>

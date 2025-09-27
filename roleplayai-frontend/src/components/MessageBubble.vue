@@ -8,17 +8,6 @@
         @click="toggleAudio"
         :icon="isPlaying ? VideoPause : isPaused ? CaretRight : VideoPlay"
       />
-      <!-- 临时移除静音按钮 -->
-      <!-- 
-      <el-button 
-        v-if="isPlaying || isPaused"
-        circle 
-        size="small"
-        class="mute-btn"
-        @click="toggleMute"
-        :icon="isMuted ? VolumeMute : VolumeUp"
-      />
-      -->
     </div>
     
     <!-- 技能触发效果 -->
@@ -34,14 +23,11 @@
 </template>
 
 <script>
-import { ref, onMounted, onUnmounted } from 'vue'
-// 修正：只导入存在的图标
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { 
   VideoPlay, 
   VideoPause, 
-  CaretRight, 
-//   VolumeUp
-  // 移除 VolumeMute 导入
+  CaretRight
 } from '@element-plus/icons-vue'
 import { 
   speakText, 
@@ -54,9 +40,7 @@ export default {
   components: {
     VideoPlay,
     VideoPause,
-    CaretRight,
-    // VolumeUp
-    // 移除 VolumeMute 组件注册
+    CaretRight
   },
   props: {
     message: {
@@ -70,30 +54,24 @@ export default {
     const isMuted = ref(false)
     
     // 检查是否为流式消息
-    const isStreaming = props.message.id && props.message.sender === 'ai'
+    const isStreaming = computed(() => props.message.id && props.message.sender === 'ai')
     
-    // 检测技能触发
-    const isSpellSkill = props.message.content && (
-      props.message.content.includes('魔杖') || 
-      props.message.content.includes('咒语') ||
-      props.message.content.includes('魔法') ||
-      props.message.content.includes('霍格沃茨')
-    )
-    
-    const isSocraticSkill = props.message.content && (
-      props.message.content.includes('那么') || 
-      props.message.content.includes('是否意味着') ||
-      props.message.content.includes('你认为') ||
-      props.message.content.includes('思考')
-    )
-    
-    const isLiterarySkill = props.message.content && (
-      props.message.content.includes('诗') || 
-      props.message.content.includes('戏剧') ||
-      props.message.content.includes('十四行诗') ||
-      props.message.content.includes('文学')
-    )
-    
+    // 检测技能触发（使用正则表达式提高准确性）
+    const isSpellSkill = computed(() => {
+      if (!props.message.content) return false;
+      return /魔杖|咒语|魔法|霍格沃茨|施法|法术|巫师|魔法师|魔法阵|魔力|魔杖|魔杖挥舞|施法手势|魔法咒语/i.test(props.message.content);
+    });
+
+    const isSocraticSkill = computed(() => {
+      if (!props.message.content) return false;
+      return /那么|是否意味着|你认为|思考|提问|反思|质疑|辩证|逻辑|推理|论证|前提|假设|概念|定义|推理|结论|思考方式|思考过程|思考方法/i.test(props.message.content);
+    });
+
+    const isLiterarySkill = computed(() => {
+      if (!props.message.content) return false;
+      return /诗|诗歌|十四行诗|文学|文学作品|小说|散文|戏剧|莎士比亚|文学创作|文学风格|文学技巧|文学手法|文学元素|文学价值|文学意义|文学分析|文学批评/i.test(props.message.content);
+    });
+
     const playAudio = () => {
       if (isPlaying.value || isPaused.value) return
       
@@ -133,19 +111,6 @@ export default {
       }
     }
     
-    // 临时移除静音功能
-    /*
-    const toggleMute = () => {
-      if (isMuted.value) {
-        unmuteSpeech()
-        isMuted.value = false
-      } else {
-        muteSpeech()
-        isMuted.value = true
-      }
-    }
-    */
-    
     // 监听语音状态变化
     const speechStatusCheck = setInterval(() => {
       if (window.speechSynthesis.speaking) {
@@ -172,19 +137,15 @@ export default {
       isSocraticSkill,
       isLiterarySkill,
       toggleAudio,
-      // 移除 toggleMute,
       VideoPlay,
       VideoPause,
       CaretRight,
-    //   VolumeUp
-      // 移除 VolumeMute
     }
   }
 }
 </script>
 
 <style scoped>
-/* 样式部分保持不变 */
 .message-bubble {
   max-width: 80%;
   padding: 12px 15px;
@@ -217,7 +178,7 @@ export default {
   gap: 5px;
 }
 
-.voice-btn, .mute-btn {
+.voice-btn {
   width: 24px;
   height: 24px;
   padding: 0;
